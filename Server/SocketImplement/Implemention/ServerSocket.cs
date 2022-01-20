@@ -102,6 +102,7 @@ namespace PingPong.Server.SocketImplement.Implemention
                 Socket handler = (Socket)ar.AsyncState;
                 int bytesSent = handler.EndSend(ar);
                 _printer.Print($"Sent {bytesSent} bytes to client.");
+                Receive(handler);
             }
             catch (Exception e)
             {

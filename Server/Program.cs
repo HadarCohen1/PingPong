@@ -11,7 +11,7 @@ namespace Server
         static void Main(string[] args)
         {
             IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-            IPAddress ipAddress = ipHostInfo.AddressList[0];
+            IPAddress ipAddress = IPAddress.Parse("127.0.0.1");
             int port = int.Parse(args[0]);
             IPEndPoint localEndPoint = new IPEndPoint(ipAddress, port);
 

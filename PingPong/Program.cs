@@ -1,7 +1,8 @@
-﻿using PingPong.Server.Implemention;
-using PingPong.Server.SocketImplement.Implemention;
-using System;
+﻿using System;
 using System.Net;
+using Client;
+using UI.Input.Implemention;
+using UI.Output.Implemention;
 
 namespace PingPong
 {
@@ -9,7 +10,8 @@ namespace PingPong
     {
         static void Main(string[] args)
         {
-
+            Bootstraper bootstraper = new Bootstraper();
+            bootstraper.Start(new ConsoleOutput(), new ConsoleInput());
         }
     }
 }

@@ -28,9 +28,9 @@ namespace Client.Implemention
             ClientSocket.Connect();
             while(true)
             {
-                Console.WriteLine("enter");
+                Console.WriteLine("Enter input to send:");
                 ClientSocket.Send(Reader.Read());
-                Printer.Print(ClientSocket.Receive().ToString());
+                Printer.Print($"Server sent: {ClientSocket.Receive().ToString()}");
             }
         }
     }

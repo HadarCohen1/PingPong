@@ -11,15 +11,8 @@ namespace Client
     {
         static void Main(string[] args)
         {
-            IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-            IPAddress ipAddress = ipHostInfo.AddressList[0];
-            IPEndPoint localEndPoint = new IPEndPoint(ipAddress, 11000);
-
-            var printer = new ConsoleOutput();
-            ClientSocket clientSocket = new ClientSocket(localEndPoint,printer);
-            PingPongClient pingPongClient = new PingPongClient(clientSocket, new ConsoleInput(), printer);
-
-            pingPongClient.StartClient();
+            Bootstraper bootstraper = new Bootstraper();
+            bootstraper.Start(new ConsoleOutput(), new ConsoleInput());
         }
     }
 }
