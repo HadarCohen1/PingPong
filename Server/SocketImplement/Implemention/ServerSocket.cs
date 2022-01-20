@@ -7,6 +7,8 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using Server;
+using UI.Output.Abstract;
+using System.Text.Json;
 
 namespace PingPong.Server.SocketImplement.Implemention
 {
@@ -15,13 +17,12 @@ namespace PingPong.Server.SocketImplement.Implemention
         public IPEndPoint IPEndPoint;
         public string Data;
         public Socket Listener;
-        public Socket Handler;
-        private byte[] _bytes;
         public ManualResetEvent allDone = new ManualResetEvent(false);
+        private IOutput<string> _printer;
         
-        public ServerSocket(IPEndPoint iPEndPoint)
+        public ServerSocket(IPEndPoint iPEndPoint, IOutput<string> printer)
         {
-            _bytes = new Byte[1024];
+            _printer = printer;
             IPEndPoint = iPEndPoint;
             Data = null;
             Listener = new Socket(IPEndPoint.AddressFamily,
@@ -37,14 +38,14 @@ namespace PingPong.Server.SocketImplement.Implemention
                 while (true)
                 { 
                     allDone.Reset();
-                    Console.WriteLine("Waiting for a connection...");
+                    _printer.Print("Waiting for a connection...");
                     Listener.BeginAccept(new AsyncCallback(AcceptCallback),Listener);
                     allDone.WaitOne();
                 }
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                _printer.Print(e.ToString());
             }
         }
 
@@ -54,14 +55,18 @@ namespace PingPong.Server.SocketImplement.Implemention
   
             Socket listener = (Socket)ar.AsyncState;
             Socket handler = listener.EndAccept(ar);
+            Receive(handler);
+        }
 
+        public void Receive(Socket handler)
+        {
             StateObject state = new StateObject();
             state.workSocket = handler;
             handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,
                 new AsyncCallback(ReadCallback), state);
         }
 
-        public void ReadCallback(IAsyncResult ar)
+        private void ReadCallback(IAsyncResult ar)
         {
             String content = String.Empty; 
             StateObject state = (StateObject)ar.AsyncState;
@@ -76,8 +81,7 @@ namespace PingPong.Server.SocketImplement.Implemention
                 content = state.sb.ToString();
                 if (content.IndexOf("<EOF>") > -1)
                 {
-                    Console.WriteLine("Read {0} bytes from socket. \n Data : {1}",
-                        content.Length, content);
+                    _printer.Print($"Read {content.Length} bytes from socket. \n Data : {content}");
                     Send(handler, content);
                 }
                 else
@@ -88,22 +92,22 @@ namespace PingPong.Server.SocketImplement.Implemention
             }
         }
 
-        private void Send(Socket handler, String data)
+        public void Send(Socket handler, object data)
         { 
-            byte[] byteData = Encoding.ASCII.GetBytes(data);
+            byte[] byteData = JsonSerializer.SerializeToUtf8Bytes(data);
 
             handler.BeginSend(byteData, 0, byteData.Length, 0,
                 new AsyncCallback(SendCallback), handler);
         }
 
-        private static void SendCallback(IAsyncResult ar)
+        private void SendCallback(IAsyncResult ar)
         {
             try
             {
                 Socket handler = (Socket)ar.AsyncState;
 
                 int bytesSent = handler.EndSend(ar);
-                Console.WriteLine("Sent {0} bytes to client.", bytesSent);
+                _printer.Print($"Sent {bytesSent} bytes to client.");
 
                 handler.Shutdown(SocketShutdown.Both);
                 handler.Close();
@@ -112,38 +116,7 @@ namespace PingPong.Server.SocketImplement.Implemention
             catch (Exception e)
             {
                 Console.WriteLine(e.ToString());
-            }
-        }
-
-        public object Receive()
-        {
-            while (true)
-            {
-                Console.WriteLine("Waiting for a connection..."); 
-                Socket handler = Listener.Accept();
-                Data = null;
-                while (true)
-                {
-                    _bytes = new byte[1024];
-                    int bytesRec = Handler.Receive(_bytes);
-                    Data += Encoding.ASCII.GetString(_bytes, 0, bytesRec);
-                    if (Data.IndexOf("<EOF>") > -1)
-                    {
-                        return Data;
-                    }
-                }
-            }
-        }
-
-        public void Send(byte[] data)
-        {
-            Handler.Send(data);
-        }
-
-        public void Close()
-        {
-            Handler.Shutdown(SocketShutdown.Both);
-            Handler.Close();
+            }   
         }
     }
 }
