@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace PingPong.Server
 {
-    public interface IServer
+    public interface IServer<T>
     {
-        public ISocket Socket { get; set; }
+        public ISocket<T> Socket { get; set; }
         public void StartListening();
     }
 }

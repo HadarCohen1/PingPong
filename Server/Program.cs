@@ -3,6 +3,8 @@ using PingPong.Server.SocketImplement.Implemention;
 using System;
 using System.Net;
 using UI.Output.Implemention;
+using Server.SocketImplement.Implemention;
+using System.Net.Sockets;
 
 namespace Server
 {
@@ -15,8 +17,9 @@ namespace Server
             int port = int.Parse(args[0]);
             IPEndPoint localEndPoint = new IPEndPoint(ipAddress, port);
 
-            var serverSocket = new ServerSocket(localEndPoint, new ConsoleOutput());
-            var tcpServer = new TcpServer(serverSocket);
+            //var serverSocket = new ServerSocket(localEndPoint, new ConsoleOutput());
+            var tcpListener = new TcpListenerSocket(localEndPoint, new ConsoleOutput());
+            var tcpServer = new TcpServer<TcpClient>(tcpListener);
 
             tcpServer.StartListening();
         }

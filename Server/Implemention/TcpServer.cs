@@ -6,12 +6,12 @@ using System.Threading.Tasks;
 
 namespace PingPong.Server.Implemention
 {
-    public class TcpServer : IServer
+    public class TcpServer<T> : IServer<T>
     {
-        public ISocket Socket { get; set; }
+        public ISocket<T> Socket { get; set; }
 
-        public TcpServer(ISocket socket)
-        {
+        public TcpServer(ISocket<T> socket)
+        {   
             Socket = socket;
         }
 

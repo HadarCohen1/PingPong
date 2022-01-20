@@ -7,10 +7,10 @@ using System.Threading.Tasks;
 
 namespace PingPong.Server
 {
-    public interface ISocket
+    public interface ISocket<T>
     {
         public void StartListening();
-        public void Receive(Socket handler);
-        public void Send(Socket handler, object data);
+        public void Receive(T handler);
+        public void Send(T handler, object data);
     }
 }

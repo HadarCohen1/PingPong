@@ -12,12 +12,12 @@ using System.Text.Json;
 
 namespace PingPong.Server.SocketImplement.Implemention
 {
-    public class ServerSocket : ISocket
+    public class ServerSocket : ISocket<Socket>
     {
         public IPEndPoint IPEndPoint;
         public string Data;
         public Socket Listener;
-        public ManualResetEvent allDone = new ManualResetEvent(false);
+        public ManualResetEvent AllDone;
         private IOutput<string> _printer;
         
         public ServerSocket(IPEndPoint iPEndPoint, IOutput<string> printer)
@@ -25,6 +25,7 @@ namespace PingPong.Server.SocketImplement.Implemention
             _printer = printer;
             IPEndPoint = iPEndPoint;
             Data = null;
+            AllDone = new ManualResetEvent(false);
             Listener = new Socket(IPEndPoint.AddressFamily,
                 SocketType.Stream, ProtocolType.Tcp);
         }
@@ -37,10 +38,10 @@ namespace PingPong.Server.SocketImplement.Implemention
                 Listener.Listen();
                 while (true)
                 { 
-                    allDone.Reset();
+                    AllDone.Reset();
                     _printer.Print("Waiting for a connection...");
                     Listener.BeginAccept(new AsyncCallback(AcceptCallback),Listener);
-                    allDone.WaitOne();
+                    AllDone.WaitOne();
                 }
             }
             catch (Exception e)
@@ -49,12 +50,11 @@ namespace PingPong.Server.SocketImplement.Implemention
             }
         }
 
-        public void AcceptCallback(IAsyncResult ar)
+        public void AcceptCallback(IAsyncResult asyncResult)
         {  
-            allDone.Set();
-  
-            Socket listener = (Socket)ar.AsyncState;
-            Socket handler = listener.EndAccept(ar);
+            AllDone.Set();
+            Socket listener = (Socket)asyncResult.AsyncState;
+            Socket handler = listener.EndAccept(asyncResult);
             Receive(handler);
         }
 
