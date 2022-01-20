@@ -8,27 +8,28 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Text.Json;
+using UI.Output.Abstract;
 
 namespace Client.SocketImplement.Implemention
 {
    
-    public class ClientSyncSocket : IClientSocket
+    public class ClientSocket : IClientSocket
     {
         public IPEndPoint IPEndPoint;
         public Socket Sender;
-        private byte[] _bytes;
         private ManualResetEvent _connectDone;
         private ManualResetEvent _sendDone;
         private ManualResetEvent _receiveDone;
+        private IOutput<string> _printer;
+        private String _response;
 
-        private static String response = String.Empty;
-
-        public ClientSyncSocket(IPEndPoint iPEndPoint)
+        public ClientSocket(IPEndPoint iPEndPoint, IOutput<string> printer)
         {
+            _printer = printer;
+            _response = String.Empty;
             _connectDone = new ManualResetEvent(false);
             _sendDone = new ManualResetEvent(false);
             _receiveDone = new ManualResetEvent(false);
-            _bytes = new byte[1024];
             IPEndPoint = iPEndPoint;
             Sender= new Socket(IPEndPoint.AddressFamily,
                 SocketType.Stream, ProtocolType.Tcp);
@@ -44,22 +45,15 @@ namespace Client.SocketImplement.Implemention
         private void ConnectCallback(IAsyncResult ar)
         {
             try
-            {
-                // Retrieve the socket from the state object.  
+            { 
                 Socket client = (Socket)ar.AsyncState;
-
-                // Complete the connection.  
                 client.EndConnect(ar);
-
-                Console.WriteLine("Socket connected to {0}",
-                    client.RemoteEndPoint.ToString());
-
-                // Signal that the connection has been made.  
+                _printer.Print($"Socket connected to {client.RemoteEndPoint.ToString()}");
                 _connectDone.Set();
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                _printer.Print(e.ToString());
             }
         }
 
@@ -67,64 +61,51 @@ namespace Client.SocketImplement.Implemention
         {
             try
             {
-                // Create the state object.  
                 StateObject state = new StateObject();
                 state.workSocket = Sender;
-
-                // Begin receiving the data from the remote device.
-                Sender.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,
-                    new AsyncCallback(ReceiveCallback), state);
-                return response;
+                Sender.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReceiveCallback), state);
+                return _response;
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                _printer.Print(e.ToString());
             }
-            return response;
+            return _response;
         }
 
-        private void ReceiveCallback(IAsyncResult ar)
+        private void ReceiveCallback(IAsyncResult asyncResult)
         {
             try
             {
-                // Retrieve the state object and the client socket
-                // from the asynchronous state object.  
-                StateObject state = (StateObject)ar.AsyncState;
+                StateObject state = (StateObject)asyncResult.AsyncState;
                 Socket client = state.workSocket;
-
-                // Read data from the remote device.  
-                int bytesRead = client.EndReceive(ar);
+                int bytesRead = client.EndReceive(asyncResult);
 
                 if (bytesRead > 0)
                 {
-                    // There might be more data, so store the data received so far.  
-                    state.sb.Append(Encoding.ASCII.GetString(state.buffer, 0, bytesRead));
-
-                    // Get the rest of the data.  
+                    _response=Encoding.ASCII.GetString(state.buffer, 0, bytesRead);
                     client.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,
                         new AsyncCallback(ReceiveCallback), state);
                 }
                 else
                 {
-                    // All the data has arrived; put it in response.  
-                    if (state.sb.Length > 1)
+                    if (_response.Length > 1)
                     {
-                        response = state.sb.ToString();
+                        _response = Encoding.ASCII.GetString(state.buffer, 0, bytesRead);
                     }
-                    // Signal that all bytes have been received.  
                     _receiveDone.Set();
                 }
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                _printer.Print(e.ToString());
             }
         }
 
         public void Send(object data)
         {
-            byte[] byteData = JsonSerializer.SerializeToUtf8Bytes(data);
-
+            byte[] byteData = Encoding.ASCII.GetBytes(data.ToString());
+            Console.WriteLine(byteData.Length);
             Sender.BeginSend(byteData, 0, byteData.Length, 0,
                 new AsyncCallback(SendCallback), Sender);
         }
@@ -133,19 +114,14 @@ namespace Client.SocketImplement.Implemention
         {
             try
             {
-                // Retrieve the socket from the state object.  
-                Socket client = (Socket)ar.AsyncState;
-
-                // Complete sending the data to the remote device.  
+                Socket client = (Socket)ar.AsyncState; 
                 int bytesSent = client.EndSend(ar);
-                Console.WriteLine("Sent {0} bytes to server.", bytesSent);
-
-                // Signal that all bytes have been sent.  
+                _printer.Print($"Sent {bytesSent} bytes to server.");
                 _sendDone.Set();
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                _printer.Print(e.ToString());
             }
         }
 

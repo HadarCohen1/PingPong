@@ -72,7 +72,6 @@ namespace PingPong.Server.SocketImplement.Implemention
             StateObject state = (StateObject)asyncResult.AsyncState;
             Socket handler = state.workSocket;
             int bytesRead = handler.EndReceive(asyncResult);
-
             if (bytesRead > 0)
             {
                 data =Encoding.ASCII.GetString(state.buffer, 0, bytesRead);
@@ -91,7 +90,7 @@ namespace PingPong.Server.SocketImplement.Implemention
 
         public void Send(Socket handler, object data)
         { 
-            byte[] byteData = JsonSerializer.SerializeToUtf8Bytes(data);
+            byte[] byteData = Encoding.ASCII.GetBytes(data.ToString());
             handler.BeginSend(byteData, 0, byteData.Length, 0,
                 new AsyncCallback(SendCallback), handler);
         }

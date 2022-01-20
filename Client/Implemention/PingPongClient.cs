@@ -30,7 +30,7 @@ namespace Client.Implemention
             {
                 Console.WriteLine("enter");
                 ClientSocket.Send(Reader.Read());
-                Printer.Print(ClientSocket.Receive());
+                Printer.Print(ClientSocket.Receive().ToString());
             }
         }
     }
