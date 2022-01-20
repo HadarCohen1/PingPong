@@ -90,7 +90,7 @@ namespace PingPong.Server.SocketImplement.Implemention
 
         public void Send(Socket handler, object data)
         { 
-            byte[] byteData = Encoding.ASCII.GetBytes(data.ToString());
+            byte[] byteData = JsonSerializer.SerializeToUtf8Bytes(data.ToString());
             handler.BeginSend(byteData, 0, byteData.Length, 0,
                 new AsyncCallback(SendCallback), handler);
         }
