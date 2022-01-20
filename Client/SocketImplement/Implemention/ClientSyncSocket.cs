@@ -7,36 +7,27 @@ using PingPong.Client.SocketImplement.Abstract;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Text.Json;
 
-namespace PingPong.Client.SocketImplement.Implemention
+namespace Client.SocketImplement.Implemention
 {
-    public class StateObject
-    {
-        // Client socket.  
-        public Socket workSocket = null;
-        // Size of receive buffer.  
-        public const int BufferSize = 256;
-        // Receive buffer.  
-        public byte[] buffer = new byte[BufferSize];
-        // Received data string.  
-        public StringBuilder sb = new StringBuilder();
-    }
+   
     public class ClientSyncSocket : IClientSocket
     {
         public IPEndPoint IPEndPoint;
         public Socket Sender;
         private byte[] _bytes;
-        private static ManualResetEvent connectDone =
-       new ManualResetEvent(false);
-        private static ManualResetEvent sendDone =
-            new ManualResetEvent(false);
-        private static ManualResetEvent receiveDone =
-            new ManualResetEvent(false);
+        private ManualResetEvent _connectDone;
+        private ManualResetEvent _sendDone;
+        private ManualResetEvent _receiveDone;
 
         private static String response = String.Empty;
 
         public ClientSyncSocket(IPEndPoint iPEndPoint)
         {
+            _connectDone = new ManualResetEvent(false);
+            _sendDone = new ManualResetEvent(false);
+            _receiveDone = new ManualResetEvent(false);
             _bytes = new byte[1024];
             IPEndPoint = iPEndPoint;
             Sender= new Socket(IPEndPoint.AddressFamily,
@@ -47,7 +38,7 @@ namespace PingPong.Client.SocketImplement.Implemention
         {
             Sender.BeginConnect(IPEndPoint,
                 new AsyncCallback(ConnectCallback), Sender);
-            connectDone.WaitOne();
+            _connectDone.WaitOne();
         }
 
         private void ConnectCallback(IAsyncResult ar)
@@ -64,7 +55,7 @@ namespace PingPong.Client.SocketImplement.Implemention
                     client.RemoteEndPoint.ToString());
 
                 // Signal that the connection has been made.  
-                connectDone.Set();
+                _connectDone.Set();
             }
             catch (Exception e)
             {
@@ -72,7 +63,7 @@ namespace PingPong.Client.SocketImplement.Implemention
             }
         }
 
-        public string Receive()
+        public object Receive()
         {
             try
             {
@@ -121,7 +112,7 @@ namespace PingPong.Client.SocketImplement.Implemention
                         response = state.sb.ToString();
                     }
                     // Signal that all bytes have been received.  
-                    receiveDone.Set();
+                    _receiveDone.Set();
                 }
             }
             catch (Exception e)
@@ -130,11 +121,10 @@ namespace PingPong.Client.SocketImplement.Implemention
             }
         }
 
-        public void Send(String data)
+        public void Send(object data)
         {
-            byte[] byteData = Encoding.ASCII.GetBytes(data);
+            byte[] byteData = JsonSerializer.SerializeToUtf8Bytes(data);
 
-            // Begin sending the data to the remote device.  
             Sender.BeginSend(byteData, 0, byteData.Length, 0,
                 new AsyncCallback(SendCallback), Sender);
         }
@@ -151,7 +141,7 @@ namespace PingPong.Client.SocketImplement.Implemention
                 Console.WriteLine("Sent {0} bytes to server.", bytesSent);
 
                 // Signal that all bytes have been sent.  
-                sendDone.Set();
+                _sendDone.Set();
             }
             catch (Exception e)
             {

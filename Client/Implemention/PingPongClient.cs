@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Client.Abstract;
 using PingPong.Client.SocketImplement.Abstract;
-using PingPong.Output.Abstract;
-using PingPong.Input.Abstract;
+using UI.Output.Abstract;
+using UI.Input.Abstract;
 
-namespace PingPong.Client.Implemention
+namespace Client.Implemention
 {
     public class PingPongClient : IClient
     {

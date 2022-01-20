@@ -10,8 +10,8 @@ namespace PingPong.Client.SocketImplement.Abstract
     public interface IClientSocket
     {
         public void Connect();
-        public string Receive();
-        public void Send(String data);
+        public object Receive();
+        public void Send(object data);
         public void Close();
     }
 }
