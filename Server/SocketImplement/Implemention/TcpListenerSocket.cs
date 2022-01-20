@@ -65,7 +65,6 @@ namespace Server.SocketImplement.Implemention
                 {
                     data = Encoding.ASCII.GetString(bytes, 0, i);
                     _printer.Print($"Received: {data}");
-                    data = data.ToUpper();
                     Send(handler, data);
                 }
             }

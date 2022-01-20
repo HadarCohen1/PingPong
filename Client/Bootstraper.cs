@@ -27,7 +27,7 @@ namespace Client
             IPAddress ipAddress = IPAddress.Parse(ipAddr);
             IPEndPoint localEndPoint = new IPEndPoint(ipAddress, int.Parse(port));
 
-            ClientSocket clientSocket = new ClientSocket(localEndPoint, output);
+            TcpClientSocket clientSocket = new TcpClientSocket(localEndPoint, output);
             PingPongClient pingPongClient = new PingPongClient(clientSocket, input, output);
 
             pingPongClient.StartClient();
