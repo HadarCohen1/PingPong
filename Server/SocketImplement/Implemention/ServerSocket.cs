@@ -66,23 +66,20 @@ namespace PingPong.Server.SocketImplement.Implemention
                 new AsyncCallback(ReadCallback), state);
         }
 
-        private void ReadCallback(IAsyncResult ar)
+        private void ReadCallback(IAsyncResult asyncResult)
         {
-            String content = String.Empty; 
-            StateObject state = (StateObject)ar.AsyncState;
+            String data = String.Empty; 
+            StateObject state = (StateObject)asyncResult.AsyncState;
             Socket handler = state.workSocket;
-            int bytesRead = handler.EndReceive(ar);
+            int bytesRead = handler.EndReceive(asyncResult);
 
             if (bytesRead > 0)
-            { 
-                state.sb.Append(Encoding.ASCII.GetString(
-                    state.buffer, 0, bytesRead));
- 
-                content = state.sb.ToString();
-                if (content.IndexOf("<EOF>") > -1)
+            {
+                data =Encoding.ASCII.GetString(state.buffer, 0, bytesRead);
+                if (data.IndexOf("<EOF>") > -1)
                 {
-                    _printer.Print($"Read {content.Length} bytes from socket. \n Data : {content}");
-                    Send(handler, content);
+                    _printer.Print($"Read {data.Length} bytes from socket. \n Data : {data}");
+                    Send(handler, data);
                 }
                 else
                 {  
@@ -95,7 +92,6 @@ namespace PingPong.Server.SocketImplement.Implemention
         public void Send(Socket handler, object data)
         { 
             byte[] byteData = JsonSerializer.SerializeToUtf8Bytes(data);
-
             handler.BeginSend(byteData, 0, byteData.Length, 0,
                 new AsyncCallback(SendCallback), handler);
         }
@@ -105,17 +101,12 @@ namespace PingPong.Server.SocketImplement.Implemention
             try
             {
                 Socket handler = (Socket)ar.AsyncState;
-
                 int bytesSent = handler.EndSend(ar);
                 _printer.Print($"Sent {bytesSent} bytes to client.");
-
-                handler.Shutdown(SocketShutdown.Both);
-                handler.Close();
-
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                _printer.Print(e.ToString());
             }   
         }
     }

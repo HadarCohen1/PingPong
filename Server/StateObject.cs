@@ -13,8 +13,6 @@ namespace Server
   
         public byte[] buffer = new byte[BufferSize];
 
-        public StringBuilder sb = new StringBuilder();
-
         public Socket workSocket = null;
     }
 }
