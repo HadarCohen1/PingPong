@@ -9,7 +9,7 @@ namespace PingPong.Server
     public interface ISocket
     {
         public void StartListening();
-        public string Receive();
+        public object Receive();
         public void Send(byte[] data);
         public void Close();
     }

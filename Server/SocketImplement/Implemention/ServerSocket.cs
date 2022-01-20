@@ -6,24 +6,11 @@ using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using Server;
 
 namespace PingPong.Server.SocketImplement.Implemention
 {
-    public class StateObject
-    {
-        // Size of receive buffer.  
-        public const int BufferSize = 1024;
-
-        // Receive buffer.  
-        public byte[] buffer = new byte[BufferSize];
-
-        // Received data string.
-        public StringBuilder sb = new StringBuilder();
-
-        // Client socket.
-        public Socket workSocket = null;
-    }
-    public class SyncTcpSocket : ISocket
+    public class ServerSocket : ISocket
     {
         public IPEndPoint IPEndPoint;
         public string Data;
@@ -31,8 +18,8 @@ namespace PingPong.Server.SocketImplement.Implemention
         public Socket Handler;
         private byte[] _bytes;
         public ManualResetEvent allDone = new ManualResetEvent(false);
-
-        public SyncTcpSocket(IPEndPoint iPEndPoint)
+        
+        public ServerSocket(IPEndPoint iPEndPoint)
         {
             _bytes = new Byte[1024];
             IPEndPoint = iPEndPoint;
@@ -41,7 +28,6 @@ namespace PingPong.Server.SocketImplement.Implemention
                 SocketType.Stream, ProtocolType.Tcp);
         }
 
-
         public void StartListening()
         {
             try
@@ -49,17 +35,10 @@ namespace PingPong.Server.SocketImplement.Implemention
                 Listener.Bind(IPEndPoint);
                 Listener.Listen();
                 while (true)
-                {
-                    // Set the event to nonsignaled state.  
+                { 
                     allDone.Reset();
-
-                    // Start an asynchronous socket to listen for connections.  
                     Console.WriteLine("Waiting for a connection...");
-                    Listener.BeginAccept(
-                        new AsyncCallback(AcceptCallback),
-                        Listener);
-
-                    // Wait until a connection is made before continuing.  
+                    Listener.BeginAccept(new AsyncCallback(AcceptCallback),Listener);
                     allDone.WaitOne();
                 }
             }
@@ -70,15 +49,12 @@ namespace PingPong.Server.SocketImplement.Implemention
         }
 
         public void AcceptCallback(IAsyncResult ar)
-        {
-            // Signal the main thread to continue.  
+        {  
             allDone.Set();
-
-            // Get the socket that handles the client request.  
+  
             Socket listener = (Socket)ar.AsyncState;
             Socket handler = listener.EndAccept(ar);
 
-            // Create the state object.  
             StateObject state = new StateObject();
             state.workSocket = handler;
             handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,
@@ -155,12 +131,11 @@ namespace PingPong.Server.SocketImplement.Implemention
             }
         }
 
-        public string Receive()
+        public object Receive()
         {
             while (true)
             {
-                Console.WriteLine("Waiting for a connection...");
-                // Program is suspended while waiting for an incoming connection.  
+                Console.WriteLine("Waiting for a connection..."); 
                 Socket handler = Listener.Accept();
                 Data = null;
                 while (true)
@@ -170,11 +145,10 @@ namespace PingPong.Server.SocketImplement.Implemention
                     Data += Encoding.ASCII.GetString(_bytes, 0, bytesRec);
                     if (Data.IndexOf("<EOF>") > -1)
                     {
-                        break;
+                        return Data;
                     }
                 }
             }
-            return Data;
         }
 
         public void Send(byte[] data)
